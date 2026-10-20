@@ -1,0 +1,463 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Обед в IhsanET — общий заказ</title>
+<style>
+  :root {
+    --wine: #6b1e24;
+    --wine-dark: #4d1418;
+    --cream: #f7f0ea;
+    --paper: #fffaf6;
+    --line: #e6d8cc;
+    --ink: #2a1d1a;
+    --muted: #8a7468;
+    --ok: #2f6b3a;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--cream);
+    color: var(--ink);
+    font: 15px/1.45 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  }
+  .wrap { max-width: 1080px; margin: 0 auto; padding: 24px 16px 48px; }
+  header { text-align: center; margin-bottom: 24px; }
+  header h1 {
+    font-family: Georgia, "Times New Roman", serif;
+    color: var(--wine);
+    font-size: 44px;
+    margin: 0;
+    letter-spacing: .5px;
+  }
+  header .sub { font-weight: 700; letter-spacing: 3px; font-size: 18px; margin-top: 2px; }
+  header .pill {
+    display: inline-block; margin-top: 8px; padding: 3px 14px;
+    background: var(--wine); color: #fff; border-radius: 999px; font-weight: 600;
+  }
+  header .hint { color: var(--wine); margin-top: 8px; }
+  .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; align-items: start; }
+  @media (max-width: 820px) { .grid { grid-template-columns: 1fr; } }
+  .card {
+    background: var(--paper);
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    padding: 18px 20px;
+  }
+  .card h2 {
+    font-family: Georgia, serif; color: var(--wine);
+    font-size: 20px; margin: 0 0 12px;
+  }
+  .card h3 {
+    font-size: 13px; text-transform: uppercase; letter-spacing: 1px;
+    color: var(--muted); margin: 18px 0 8px;
+  }
+  label.field { display: block; font-weight: 600; margin-bottom: 4px; }
+  input[type=text], input[type=time], textarea {
+    width: 100%; padding: 9px 11px; font: inherit;
+    border: 1px solid var(--line); border-radius: 9px; background: #fff;
+  }
+  input:focus, textarea:focus { outline: 2px solid var(--wine); outline-offset: -1px; }
+  .opts { display: grid; gap: 6px; }
+  .opt {
+    display: flex; align-items: center; gap: 10px;
+    padding: 8px 11px; border: 1px solid var(--line); border-radius: 9px;
+    background: #fff; cursor: pointer; user-select: none;
+  }
+  .opt:hover { border-color: #c9ad9c; }
+  .opt input { accent-color: var(--wine); margin: 0; }
+  .opt .name { flex: 1; }
+  .opt .price { color: var(--wine); font-weight: 700; white-space: nowrap; }
+  .opt.checked { border-color: var(--wine); background: #fbf1ee; }
+  .row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+  button {
+    font: inherit; font-weight: 600; cursor: pointer;
+    border-radius: 9px; padding: 10px 16px; border: 1px solid var(--wine);
+    background: var(--wine); color: #fff;
+  }
+  button:hover { background: var(--wine-dark); }
+  button.ghost { background: transparent; color: var(--wine); }
+  button.ghost:hover { background: #f3e4de; }
+  button.small { padding: 4px 10px; font-size: 13px; }
+  button:disabled { opacity: .5; cursor: not-allowed; }
+  .actions { display: flex; gap: 8px; margin-top: 16px; flex-wrap: wrap; }
+  .err { color: #a3261c; margin-top: 8px; min-height: 1em; }
+  .orders { list-style: none; padding: 0; margin: 0; }
+  .orders li {
+    display: flex; gap: 10px; align-items: flex-start;
+    padding: 9px 0; border-bottom: 1px dashed var(--line);
+  }
+  .orders li:last-child { border-bottom: 0; }
+  .orders .who { font-weight: 700; min-width: 0; }
+  .orders .what { color: var(--muted); font-size: 14px; }
+  .orders .body { flex: 1; }
+  .orders .mine { color: var(--ok); font-size: 12px; font-weight: 600; margin-left: 6px; }
+  .empty { color: var(--muted); font-style: italic; }
+  pre.msg {
+    white-space: pre-wrap; background: #fff; border: 1px solid var(--line);
+    border-radius: 9px; padding: 12px 14px; margin: 0;
+    font: 14px/1.5 ui-monospace, SFMono-Regular, Menlo, monospace;
+    min-height: 120px;
+  }
+  .settings { display: grid; grid-template-columns: 110px 1fr; gap: 8px; align-items: center; margin-bottom: 12px; }
+  .total { margin-top: 10px; color: var(--muted); }
+  .total b { color: var(--ink); }
+  .banner {
+    background: #fff4d6; border: 1px solid #ecd48f; color: #6b5310;
+    padding: 9px 12px; border-radius: 9px; margin-bottom: 16px; font-size: 14px;
+  }
+  .toast {
+    position: fixed; left: 50%; bottom: 24px; transform: translateX(-50%);
+    background: var(--ink); color: #fff; padding: 9px 16px; border-radius: 999px;
+    opacity: 0; transition: opacity .2s; pointer-events: none;
+  }
+  .toast.show { opacity: 1; }
+  footer { text-align: center; color: var(--muted); font-size: 13px; margin-top: 28px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>IhsanET</h1>
+    <div class="sub">БИЗНЕС-ЛАНЧ</div>
+    <div class="pill">12:00–16:00 · ПН–ПТ</div>
+    <div class="hint">Основное блюдо + суп + чай/компот</div>
+  </header>
+
+  <div id="banner" class="banner" hidden></div>
+
+  <div class="grid">
+    <!-- Левая колонка: выбор -->
+    <section class="card">
+      <h2>Мой выбор</h2>
+
+      <label class="field" for="name">Имя</label>
+      <input id="name" type="text" placeholder="Как вас записать" autocomplete="off">
+
+      <h3>Основное блюдо</h3>
+      <div class="opts" id="mains"></div>
+
+      <h3>Суп на выбор</h3>
+      <div class="opts" id="soups"></div>
+
+      <h3>Напиток</h3>
+      <div class="row2" id="drinks"></div>
+
+      <h3>Пожелание</h3>
+      <input id="note" type="text" placeholder="Например: без лука (необязательно)" autocomplete="off">
+
+      <div class="actions">
+        <button id="save">Записаться</button>
+        <button id="reset" class="ghost">Сбросить</button>
+      </div>
+      <div class="err" id="err"></div>
+    </section>
+
+    <!-- Правая колонка: общий заказ -->
+    <section>
+      <div class="card">
+        <h2>Кто что заказал <span id="count" style="color:var(--muted);font-size:16px"></span></h2>
+        <ul class="orders" id="orders"></ul>
+      </div>
+
+      <div class="card" style="margin-top:20px">
+        <h2>Сообщение в кафе</h2>
+        <div class="settings">
+          <label for="time">Время</label>
+          <input id="time" type="time" value="12:10">
+        </div>
+        <pre class="msg" id="msg"></pre>
+        <div class="total" id="total"></div>
+        <div class="actions">
+          <button id="copy">Скопировать</button>
+          <button id="refresh" class="ghost">Обновить</button>
+          <button id="clear" class="ghost">Очистить список</button>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <footer>Чынгыз Айтматов 47А/1 · Ахунбаева 17А · @ihsanet_kg · Список обнуляется каждый день</footer>
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+// ---------- Меню (по фото бизнес-ланча) ----------
+const MAINS = [
+  { id: 'burger_classic', name: 'Бургер классический', label: 'Бургер классический XL', price: [449, 549] },
+  { id: 'burger_bbq',     name: 'Бургер BBQ',          label: 'Бургер BBQ XL',          price: [449, 549] },
+  { id: 'chicken_kebab',  name: 'Шашлык из курицы',    price: [410, 410] },
+  { id: 'steak_kebab',    name: 'Стейк-шашлык от шефа', label: 'Фирменный стейк-шашлык от шефа', price: [890, 890] },
+  { id: 'trout',          name: 'Форель на мангале',   price: [730, 730] },
+  { id: 'fettuccine',     name: 'Фетучини с курицей',  price: [450, 450] },
+  { id: 'bolognese',      name: 'Паста Болоньезе',     price: [460, 460] },
+];
+const SOUPS = [
+  { id: 'meatball', name: 'Суп с фрикадельками' },
+  { id: 'noodle',   name: 'Суп лапша по-домашнему' },
+  { id: 'lentil',   name: 'Суп чечевичный' },
+  { id: 'mastava',  name: 'Мастава' },
+];
+const DRINKS = [
+  { id: 'tea',     name: 'Чай' },
+  { id: 'compote', name: 'Компот' },
+];
+
+// ---------- Хранилище ----------
+// В claude.ai-артефакте есть window.storage с общим (shared) режимом — тогда
+// список видят все, кто открыл ссылку. Иначе — localStorage этого браузера.
+const SHARED = typeof window.storage === 'object' && window.storage !== null;
+const today = new Date().toLocaleDateString('sv-SE'); // YYYY-MM-DD
+const PREFIX = `ihsanet:${today}:`;
+
+const store = SHARED ? {
+  async list() {
+    const res = await window.storage.list(PREFIX, true);
+    const keys = (res && res.keys) || [];
+    const rows = await Promise.all(keys.map(async k => {
+      try {
+        const r = await window.storage.get(typeof k === 'string' ? k : k.key, true);
+        return r && r.value ? JSON.parse(r.value) : null;
+      } catch (_) { return null; /* ключ удалили между list и get */ }
+    }));
+    return rows.filter(Boolean);
+  },
+  async put(o) { await window.storage.set(PREFIX + o.id, JSON.stringify(o), true); },
+  async del(id) { await window.storage.delete(PREFIX + id, true); },
+} : {
+  async list() {
+    const out = [];
+    for (let i = 0; i < localStorage.length; i++) {
+      const k = localStorage.key(i);
+      if (k.startsWith(PREFIX)) out.push(JSON.parse(localStorage.getItem(k)));
+    }
+    return out;
+  },
+  async put(o) { localStorage.setItem(PREFIX + o.id, JSON.stringify(o)); },
+  async del(id) { localStorage.removeItem(PREFIX + id); },
+};
+
+// Личное (какой заказ «мой», имя, время) — всегда локально
+const local = {
+  get(k, d) { try { return localStorage.getItem('ihsanet-me:' + k) ?? d; } catch (_) { return d; } },
+  set(k, v) { try { localStorage.setItem('ihsanet-me:' + k, v); } catch (_) {} },
+};
+
+// ---------- UI ----------
+const $ = id => document.getElementById(id);
+let orders = [];
+let myId = local.get('id:' + today, null);
+
+function renderOptions(container, items, group) {
+  container.innerHTML = items.map(it => {
+    const price = it.price
+      ? `<span class="price">${it.price[0] === it.price[1] ? it.price[0] : it.price.join('–')} с</span>`
+      : '';
+    return `<label class="opt"><input type="radio" name="${group}" value="${it.id}">
+      <span class="name">${it.label || it.name}</span>${price}</label>`;
+  }).join('');
+}
+renderOptions($('mains'), MAINS, 'main');
+renderOptions($('soups'), SOUPS, 'soup');
+renderOptions($('drinks'), DRINKS, 'drink');
+
+document.addEventListener('change', e => {
+  if (e.target.type !== 'radio') return;
+  document.querySelectorAll(`input[name="${e.target.name}"]`).forEach(r =>
+    r.closest('.opt').classList.toggle('checked', r.checked));
+});
+
+function pick(group) {
+  const el = document.querySelector(`input[name="${group}"]:checked`);
+  return el ? el.value : null;
+}
+function setPick(group, value) {
+  document.querySelectorAll(`input[name="${group}"]`).forEach(r => {
+    r.checked = r.value === value;
+    r.closest('.opt').classList.toggle('checked', r.checked);
+  });
+}
+function fillForm(o) {
+  $('name').value = o ? o.name : local.get('name', '');
+  $('note').value = o ? (o.note || '') : '';
+  setPick('main', o ? o.main : null);
+  setPick('soup', o ? o.soup : null);
+  setPick('drink', o ? o.drink : null);
+  $('save').textContent = o ? 'Обновить мой заказ' : 'Записаться';
+}
+
+const byId = (list, id) => list.find(x => x.id === id);
+const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+
+function describe(o) {
+  const parts = [byId(MAINS, o.main)?.name, byId(SOUPS, o.soup)?.name, byId(DRINKS, o.drink)?.name];
+  return parts.filter(Boolean).join(' · ') + (o.note ? ` — «${o.note}»` : '');
+}
+
+function persons(n) {
+  const m10 = n % 10, m100 = n % 100;
+  if (m100 >= 11 && m100 <= 14) return 'человек';
+  if (m10 >= 1 && m10 <= 4) return 'человека'; // «на 3 человека», но «на 7 человек»
+  return 'человек';
+}
+
+function buildMessage() {
+  if (!orders.length) return '';
+  const count = (list, field) => list
+    .map(it => [orders.filter(o => o[field] === it.id).length, it.name])
+    .filter(([n]) => n > 0)
+    .map(([n, name]) => `${n} ${name}`);
+
+  const blocks = [count(SOUPS, 'soup'), count(MAINS, 'main'), count(DRINKS, 'drink')]
+    .filter(b => b.length)
+    .map(b => b.join('\n'));
+
+  const notes = orders.filter(o => o.note).map(o => {
+    const main = byId(MAINS, o.main)?.name || '';
+    return `- ${main}: ${o.note}`;
+  });
+  if (notes.length) blocks.push('Пожелания:\n' + notes.join('\n'));
+
+  const n = orders.length;
+  const head = `Добрый день, хотел сделать предзаказ. Стол на ${n} ${persons(n)} к ${$('time').value || '12:10'}`;
+  return [head, ...blocks].join('\n\n');
+}
+
+function render() {
+  orders.sort((a, b) => a.ts - b.ts);
+  $('count').textContent = orders.length ? `(${orders.length})` : '';
+  $('orders').innerHTML = orders.length
+    ? orders.map(o => `<li>
+        <div class="body">
+          <div class="who">${esc(o.name)}${o.id === myId ? '<span class="mine">это я</span>' : ''}</div>
+          <div class="what">${esc(describe(o))}</div>
+        </div>
+        <button class="ghost small" data-del="${o.id}" title="Убрать из заказа">✕</button>
+      </li>`).join('')
+    : '<li class="empty">Пока никто не записался</li>';
+
+  $('msg').textContent = buildMessage() || 'Здесь появится текст для кафе, когда кто-нибудь запишется.';
+  $('copy').disabled = !orders.length;
+
+  const lo = orders.reduce((s, o) => s + (byId(MAINS, o.main)?.price[0] || 0), 0);
+  const hi = orders.reduce((s, o) => s + (byId(MAINS, o.main)?.price[1] || 0), 0);
+  $('total').innerHTML = orders.length
+    ? `Итого примерно: <b>${lo === hi ? lo : lo + '–' + hi} сом</b>`
+    : '';
+}
+
+async function reload() {
+  try {
+    orders = await store.list();
+  } catch (e) {
+    showBanner('Не удалось прочитать общий список: ' + e.message);
+  }
+  if (myId && !byId(orders, myId)) { myId = null; }
+  render();
+}
+
+function showBanner(text) { $('banner').hidden = false; $('banner').textContent = text; }
+function toast(text) {
+  $('toast').textContent = text;
+  $('toast').classList.add('show');
+  setTimeout(() => $('toast').classList.remove('show'), 1600);
+}
+
+$('save').onclick = async () => {
+  const name = $('name').value.trim();
+  const main = pick('main'), soup = pick('soup'), drink = pick('drink');
+  const missing = [!name && 'имя', !main && 'основное блюдо', !soup && 'суп', !drink && 'напиток'].filter(Boolean);
+  if (missing.length) { $('err').textContent = 'Не выбрано: ' + missing.join(', '); return; }
+  $('err').textContent = '';
+
+  const existing = myId && byId(orders, myId);
+  const o = {
+    id: myId || Math.random().toString(36).slice(2, 10),
+    name, main, soup, drink,
+    note: $('note').value.trim(),
+    ts: existing ? existing.ts : Date.now(),
+  };
+  $('save').disabled = true;
+  try {
+    await store.put(o);
+    myId = o.id;
+    local.set('id:' + today, myId);
+    local.set('name', name);
+    await reload();
+    fillForm(o);
+    toast(existing ? 'Заказ обновлён' : 'Вы записаны');
+  } catch (e) {
+    $('err').textContent = 'Не сохранилось: ' + e.message;
+  } finally {
+    $('save').disabled = false;
+  }
+};
+
+$('reset').onclick = () => {
+  // Сбросить форму и начать новую запись (например, заказать за коллегу)
+  myId = null;
+  local.set('id:' + today, '');
+  fillForm(null);
+  $('name').value = '';
+  render();
+};
+
+$('orders').onclick = async e => {
+  const id = e.target.dataset.del;
+  if (!id) return;
+  await store.del(id);
+  if (id === myId) { myId = null; fillForm(null); }
+  await reload();
+};
+
+$('time').value = local.get('time', '12:10');
+$('time').oninput = () => { local.set('time', $('time').value); render(); };
+
+$('copy').onclick = async () => {
+  const text = buildMessage();
+  try {
+    await navigator.clipboard.writeText(text);
+  } catch (_) {
+    // В iframe артефакта clipboard API бывает закрыт — старый способ
+    const ta = document.createElement('textarea');
+    ta.value = text; document.body.appendChild(ta); ta.select();
+    document.execCommand('copy'); ta.remove();
+  }
+  toast('Скопировано');
+};
+
+$('refresh').onclick = reload;
+
+// Очистка общего списка — в два клика, чтобы случайно не снести чужие заказы
+let clearArmed = null;
+$('clear').onclick = async () => {
+  if (!orders.length) return;
+  if (!clearArmed) {
+    $('clear').textContent = 'Точно очистить?';
+    clearArmed = setTimeout(() => { clearArmed = null; $('clear').textContent = 'Очистить список'; }, 3000);
+    return;
+  }
+  clearTimeout(clearArmed); clearArmed = null;
+  $('clear').textContent = 'Очистить список';
+  $('clear').disabled = true;
+  for (const o of orders) await store.del(o.id);
+  myId = null; fillForm(null);
+  await reload();
+  $('clear').disabled = false;
+  toast('Список очищен');
+};
+
+if (!SHARED) {
+  showBanner('Общего хранилища нет: заказы сохраняются только в этом браузере. ' +
+    'Чтобы коллеги записывались сами, откройте страницу как опубликованный артефакт claude.ai.');
+}
+
+(async () => {
+  await reload();
+  fillForm(myId ? byId(orders, myId) : null);
+  if (SHARED) setInterval(reload, 10000);
+})();
+</script>
+</body>
+</html>
